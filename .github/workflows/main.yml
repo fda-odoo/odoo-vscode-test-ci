@@ -1,0 +1,30 @@
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+    - run: npm install
+
+    - name: Extract version info
+      id: version
+      run: |
+        TAG="${GITHUB_REF_NAME}"
+        MINOR=$(echo "$TAG" | cut -d. -f2)
+        if [ $((MINOR % 2)) -eq 1 ]; then
+          echo "command=package --prerelease" >> $GITHUB_OUTPUT
+        else
+          echo "command=package --pre-release" >> $GITHUB_OUTPUT
+        fi
+
+    # https://code.visualstudio.com/api/working-with-extensions/continuous-integration#automated-publishing
+    - name: Package linux x86_64
+      run: npm run package
