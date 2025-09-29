@@ -10,21 +10,53 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install Node.js
-      uses: actions/setup-node@v4
-    - run: npm install
-
     - name: Extract version info
       id: version
       run: |
         TAG="${GITHUB_REF_NAME}"
         MINOR=$(echo "$TAG" | cut -d. -f2)
+        echo "version=$TAG" >> $GITHUB_OUTPUT
         if [ $((MINOR % 2)) -eq 1 ]; then
           echo "command=package --prerelease" >> $GITHUB_OUTPUT
+          echo "changelog_url=https://raw.githubusercontent.com/odoo/odoo-ls/beta/changelog.md" >> $GITHUB_OUTPUT
         else
-          echo "command=package --pre-release" >> $GITHUB_OUTPUT
+          echo "command=package" >> $GITHUB_OUTPUT
+          echo "changelog_url=https://raw.githubusercontent.com/odoo/odoo-ls/release/changelog.md" >> $GITHUB_OUTPUT
         fi
 
-    # https://code.visualstudio.com/api/working-with-extensions/continuous-integration#automated-publishing
-    - name: Package linux x86_64
-      run: npm run package
+    - name: Download language server
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        wget https://github.com/odoo/odoo-ls/releases/download/$VERSION/odoo-linux-x64-1.0.1.zip -O odoo-ls.zip
+        unzip odoo-ls.zip
+        
+      #wget https://github.com/odoo/odoo-ls/releases/download/$VERSION/odoo-linux-x86_64-1.0.1.tar.gz -O odoo-ls.tar.gz
+      #tar -xvzf odoo-ls.tar.gz
+  
+    - name: Clone typeshed
+      run: |
+        git clone https://github.com/python/typeshed typeshed
+  
+    - name: Replace SCHEMA_VERSION in package.json
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        sed -i "s/\${{SCHEMA_VERSION}}/$VERSION/g" package.json
+
+    - name: Download changelog
+      run: |
+        wget ${{ steps.version.outputs.changelog_url }}
+    
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+    - run: npm install
+
+    - name: Build VSIX
+      run: npx vsce ${{ steps.version.outputs.command }}
+      env:
+        NODE_ENV: production
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: extension-vsix
+        path: "*.vsix"
