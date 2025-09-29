@@ -40,7 +40,7 @@ jobs:
     - name: Replace SCHEMA_VERSION in package.json
       run: |
         VERSION=${{ steps.version.outputs.version }}
-        sed -i "s/\${{SCHEMA_VERSION}}/$VERSION/g" package.json
+        sed -i 's/$${{SCHEMA_VERSION}}/'"$VERSION"'/g' package.json
 
     - name: Download changelog
       run: |
