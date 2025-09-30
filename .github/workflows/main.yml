@@ -62,7 +62,7 @@ jobs:
 
     - name: Install vsce
       uses: actions/setup-node@v4
-    - run: npm install @vscode/vscce
+    - run: npm install @vscode/vsce
 
     - name: Build VSIX
       run: npx vsce ${{ steps.version.outputs.command }}
