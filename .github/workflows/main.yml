@@ -27,11 +27,8 @@ jobs:
     - name: Download language server
       run: |
         VERSION=${{ steps.version.outputs.version }}
-        wget https://github.com/odoo/odoo-ls/releases/download/$VERSION/odoo-linux-x64-1.0.1.zip -O odoo-ls.zip
-        unzip odoo-ls.zip
-        
-      #wget https://github.com/odoo/odoo-ls/releases/download/$VERSION/odoo-linux-x86_64-1.0.1.tar.gz -O odoo-ls.tar.gz
-      #tar -xvzf odoo-ls.tar.gz
+        wget https://github.com/fda-odoo/odoo-ls-test-ci/releases/download/$VERSION/odoo-linux-x86_64-1.0.1.tar.gz -O odoo-ls.tar.gz
+        tar -xvzf odoo-ls.tar.gz
   
     - name: Clone typeshed
       run: |
@@ -40,7 +37,7 @@ jobs:
     - name: Replace SCHEMA_VERSION in package.json
       run: |
         VERSION=${{ steps.version.outputs.version }}
-        sed -i 's/$${{SCHEMA_VERSION}}/'"$VERSION"'/g' package.json
+        sed -i 's/__SCHEMA_VERSION__/'"$VERSION"'/g' package.json
 
     - name: Download changelog
       run: |
