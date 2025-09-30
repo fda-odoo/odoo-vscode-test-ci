@@ -8,15 +8,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: 
-          - alpine-x86_64
-          - alpine-aarch64
-          - linux-x86_64
-          - linux-aarch64
-          - darwin-x86_64
-          - darwin-aarch64
-          - win32-x86_64
-          - win32-aarch64
+        include: 
+          - target: alpine-x86_64
+            vsix: alpine-x86_64
+          - target: alpine-aarch64
+            vsix: alpine-arm64
+          - target: linux-x86_64
+            vsix: linux-x86_64
+          - target: linux-aarch64
+            vsix: linux-arm64
+          - target: darwin-x86_64
+            vsix: darwin-x86_64
+          - target: darwin-aarch64
+            vsix: darwin-arm64
+          - target: win32-x86_64
+            vsix: win32-x86_64
+          - target: win32-aarch64
+            vsix: win32-arm64
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -79,7 +87,7 @@ jobs:
         fi
 
     - name: Build VSIX for ${{ matrix.target }}
-      run: npx vsce ${{ steps.version.outputs.command }}
+      run: npx vsce ${{ steps.version.outputs.command }} --target ${{ matrix.vsix }}
       env:
         NODE_ENV: production
 
@@ -97,6 +105,25 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ./dist
+      
+      - name: Extract version info
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          MINOR=$(echo "$TAG" | cut -d. -f2)
+          if [ $((MINOR % 2)) -eq 1 ]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "title=$TAG - Beta" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "title=$TAG" >> $GITHUB_OUTPUT
+          fi
+        
+      - name: Extract changelog entry
+        id: changelog
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          awk "/^## \\[$TAG\\]/ {flag=1; next} /^## \\[/ {flag=0} flag {print}" changelog.md > RELEASE_NOTES.md
 
       - name: Display files
         run: ls -R ./dist
@@ -104,6 +131,10 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ steps.version.outputs.title }}
+          tag_name: ${{ github.ref_name }}
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          body_path: RELEASE_NOTES.md
           files: ./dist/**/*.vsix
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
