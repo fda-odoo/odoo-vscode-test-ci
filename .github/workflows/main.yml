@@ -34,6 +34,19 @@ jobs:
       run: |
         git clone https://github.com/python/typeshed typeshed
   
+    - name: Checkout additional stubs from OdooLS
+      uses: actions/checkout@v4
+      with:
+        repository: fda-odoo/odoo-ls-test-ci
+        ref: $VERSION
+        path: temp-repo
+        sparse-checkout: server/additional_stubs
+        sparse-checkout-cone-mode: false
+    
+    - name: Copy additional stubs to current project
+      run: |
+        cp -r temp-repo/server/additional_stubs ./additional_stubs
+  
     - name: Replace SCHEMA_VERSION in package.json
       run: |
         VERSION=${{ steps.version.outputs.version }}
@@ -46,6 +59,10 @@ jobs:
     - name: Install Node.js
       uses: actions/setup-node@v4
     - run: npm install
+
+    - name: Install vsce
+      uses: actions/setup-node@v4
+    - run: npm install @vscode/vscce
 
     - name: Build VSIX
       run: npx vsce ${{ steps.version.outputs.command }}
