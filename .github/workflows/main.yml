@@ -54,6 +54,12 @@ jobs:
         path: additional_stubs
         sparse-checkout: server/additional_stubs
         sparse-checkout-cone-mode: false
+
+    - name: Flatten additional_stubs and clean
+      run: |
+        # Move the stubs to the root of additional_stubs
+        mv additional_stubs/server/additional_stubs/* additional_stubs/
+        rm -rf additional_stubs/server
   
     - name: Replace SCHEMA_VERSION in package.json
       run: |
